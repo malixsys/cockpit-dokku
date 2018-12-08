@@ -42,6 +42,7 @@ class RestApi extends \LimeExtra\Controller {
             }
         }
 
-        return $this->module('forms')->find($form['name']);
+        $entries = $this->module('forms')->find($form['name']);
+        return json_encode($entries, JSON_PRETTY_PRINT);
     }
 }
