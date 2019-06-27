@@ -1,4 +1,12 @@
 <?php
+/**
+ * This file is part of the Cockpit project.
+ *
+ * (c) Artur Heinze - 🅰🅶🅴🅽🆃🅴🅹🅾, http://agentejo.com
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
 
 namespace Singletons\Controller;
 
@@ -53,6 +61,12 @@ class Admin extends \Cockpit\AuthController {
             if (!$singleton) {
                 return false;
             }
+
+            if (!$this->app->helper('admin')->isResourceEditableByCurrentUser($singleton['_id'], $meta)) {
+                return $this->render('cockpit:views/base/locked.php', compact('meta'));
+            }
+
+            $this->app->helper('admin')->lockResourceId($singleton['_id']);
         }
 
         // acl groups
@@ -68,31 +82,39 @@ class Admin extends \Cockpit\AuthController {
 
     public function form($name = null) {
 
-        if ($name) {
-
-            $singleton = $this->module('singletons')->singleton($name);
-
-            if (!$singleton) {
-                return false;
-            }
-
-            if (!$this->module('singletons')->hasaccess($singleton['name'], 'form')) {
-                return $this->helper('admin')->denyRequest();
-            }
-
-            $singleton = array_merge([
-                'sortable' => false,
-                'color' => '',
-                'icon' => '',
-                'description' => ''
-            ], $singleton);
-
-            $data = $this->module('singletons')->getData($name);
-
-            return $this->render('singletons:views/form.php', compact('singleton', 'data'));
+        if (!$name) {
+            return false;
         }
 
-        return false;
+        $singleton = $this->module('singletons')->singleton($name);
+
+        if (!$singleton) {
+            return false;
+        }
+
+        if (!$this->module('singletons')->hasaccess($singleton['name'], 'form')) {
+            return $this->helper('admin')->denyRequest();
+        }
+
+        $singleton = array_merge([
+            'sortable' => false,
+            'color' => '',
+            'icon' => '',
+            'description' => ''
+        ], $singleton);
+
+        $lockId = "singleton_{$singleton['name']}";
+
+        if (!$this->app->helper('admin')->isResourceEditableByCurrentUser($lockId, $meta)) {
+            return $this->render('singletons:views/locked.php', compact('meta', 'singleton'));
+        }
+
+        $data = $this->module('singletons')->getData($name);
+
+        $this->app->helper('admin')->lockResourceId($lockId);
+
+        return $this->render('singletons:views/form.php', compact('singleton', 'data'));
+        
     }
 
     public function remove_singleton($singleton) {
@@ -125,6 +147,12 @@ class Admin extends \Cockpit\AuthController {
             return $this->helper('admin')->denyRequest();
         }
 
+        $lockId = "singleton_{$singleton['name']}";
+
+        if (!$this->app->helper('admin')->isResourceEditableByCurrentUser($lockId)) {
+            $this->stop(['error' => "Saving failed! Singleton is locked!"], 412);
+        }
+
         $data['_mby'] = $this->module('cockpit')->getUser('_id');
 
         if (isset($data['_by'])) {
@@ -135,7 +163,9 @@ class Admin extends \Cockpit\AuthController {
             $revision = true;
         }
 
-        $this->module('singletons')->saveData($singleton['name'], $data, ['revision' => $revision]);
+        $data = $this->module('singletons')->saveData($singleton['name'], $data, ['revision' => $revision]);
+
+        $this->app->helper('admin')->lockResourceId($lockId);
 
         return ['data' => $data];
     }

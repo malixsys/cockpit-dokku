@@ -1,4 +1,12 @@
 <?php
+/**
+ * This file is part of the Cockpit project.
+ *
+ * (c) Artur Heinze - 🅰🅶🅴🅽🆃🅴🅹🅾, http://agentejo.com
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
 
 $this->module('singletons')->extend([
 
@@ -120,7 +128,7 @@ $this->module('singletons')->extend([
                 $this->app->helper('revisions')->add($singleton['_id'], $data, "singletons/{$singleton['name']}", true);
             }
 
-            return true;
+            return $data;
         }
 
         return false;
@@ -296,7 +304,7 @@ $this->module('singletons')->extend([
 
                 foreach ($languages as $l) {
 
-                    if (isset($data["{$name}_{$l}"])) {
+                    if (isset($data["{$name}_{$l}"]) && $data["{$name}_{$l}"] !== '') {
 
                         if ($l == $lang) {
 

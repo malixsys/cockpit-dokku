@@ -1,9 +1,18 @@
 <?php
+/**
+ * This file is part of the Cockpit project.
+ *
+ * (c) Artur Heinze - 🅰🅶🅴🅽🆃🅴🅹🅾, http://agentejo.com
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
 
 // Helpers
 
 $this->helpers['revisions']  = 'Cockpit\\Helper\\Revisions';
 $this->helpers['updater']  = 'Cockpit\\Helper\\Updater';
+$this->helpers['async']  = 'Cockpit\\Helper\\Async';
 
 // API
 $this->module('cockpit')->extend([
@@ -23,9 +32,10 @@ $this->module('cockpit')->extend([
 
         $dirs = ['#cache:','#tmp:','#thumbs:'];
 
-        foreach($dirs as $dir) {
+        foreach ($dirs as $dir) {
 
-            $files = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($app->path($dir)), \RecursiveIteratorIterator::SELF_FIRST);
+            $path = $app->path($dir);
+            $files = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($path), \RecursiveIteratorIterator::SELF_FIRST);
 
             foreach ($files as $file) {
 
@@ -35,7 +45,7 @@ $this->module('cockpit')->extend([
                 @unlink($file->getRealPath());
             }
 
-            $app->helper('fs')->removeEmptySubFolders('#cache:');
+            $app->helper('fs')->removeEmptySubFolders($path);
         }
 
         $app->trigger('cockpit.clearcache');
@@ -55,12 +65,16 @@ $this->module('cockpit')->extend([
         $container = $this->app->path('#storage:').'/api.keys.php';
 
         if (file_exists($container)) {
+            
             $data = include($container);
             $data = @unserialize($this->app->decode($data, $this->app['sec-key']));
 
             if ($data !== false) {
                 $keys = array_merge($keys, $data);
             }
+
+        } else {
+            $keys = $this->app->storage->getKey('cockpit', 'api_keys', $keys);
         }
 
         return $keys;
@@ -68,9 +82,14 @@ $this->module('cockpit')->extend([
 
     'saveApiKeys' => function($data) {
 
-        $data      = serialize(array_merge([ 'master' => '', 'special' => [] ], (array)$data));
-        $export    = var_export($this->app->encode($data, $this->app["sec-key"]), true);
-        $container = $this->app->path('#storage:').'/api.keys.php';
+        $data = array_merge([ 'master' => '', 'special' => [] ], (array)$data);
+
+        $this->app->storage->setKey('cockpit', 'api_keys', $data);
+
+        // cache
+        $serialized = serialize($data);
+        $export     = var_export($this->app->encode($serialized, $this->app["sec-key"]), true);
+        $container  = $this->app->path('#storage:').'/api.keys.php';
 
         return $this->app->helper('fs')->write($container, "<?php\n return {$export};");
     },
@@ -247,7 +266,7 @@ $this->module('cockpit')->extend([
                     'blur', 'brighten',
                     'colorize', 'contrast',
                     'darken', 'desaturate',
-                    'edge detect', 'emboss',
+                    'edgeDetect', 'emboss',
                     'flip', 'invert', 'opacity', 'pixelate', 'sepia', 'sharpen', 'sketch'
                 ];
 
@@ -286,6 +305,11 @@ $this->module('cockpit')->extend([
         }
 
         if ($output) {
+
+            if ($output == 'redirect') {
+                $this->app->reroute($this->app->filestorage->getURL($thumbpath));
+            }
+
             header("Content-Type: image/{$ext}");
             header('Content-Length: '.$this->app->filestorage->getSize($thumbpath));
             echo $this->app->filestorage->read($thumbpath);

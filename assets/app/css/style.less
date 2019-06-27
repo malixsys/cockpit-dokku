@@ -6,7 +6,7 @@
 @import (less) "../../lib/codemirror/addon/hint/show-hint.css";
 @import "less/uikit/uikit.less";
 
-@global-primary-background: #4FC1E9;
+@global-primary-background: #1875f0;
 //@global-primary-background: #A0CECB;
 //@global-primary-background: #eb5424;
 //@global-primary-background: #485b8a;
@@ -29,6 +29,15 @@
 
 .uk-selected, tr.uk-selected > td {
     background: @global-selected-background;
+}
+
+.uk-container-vertical-center {
+    margin-top: auto;
+    margin-bottom: auto;
+}
+
+[data-uk-svg] {
+    opacity: .2;
 }
 
 .uk-animation-fast {
@@ -96,6 +105,10 @@
     max-width: 85vw;
 }
 
+.app-header-topbar a {
+    transition: color 200ms;
+}
+
 .app-panel-dropdown .uk-nav-side a:hover,
 .app-panel-dropdown .uk-nav-side .uk-active a {
     background: none;
@@ -140,6 +153,23 @@ cp-actionbar {
     z-index: 4;
 }
 
+cp-fieldcontainer {
+    display: block;
+}
+
+@media (min-width:1220px) {
+
+    cp-fieldcontainer {
+        padding-left: 15px;
+        border-left: 2px rgba(0,0,0,.1) solid;
+        transition: border-color 200ms;
+    }
+
+    cp-fieldcontainer[active="true"] {
+        border-color: @global-primary-background;
+    }
+}
+
 .material-ripple {
     position: absolute;
     pointer-events: none;
@@ -173,13 +203,30 @@ cp-actionbar {
 
 // vendor styles
 
+.mce-tinymce {
+    box-shadow: none !important;
+}
+
 .mce-panel {
     border: none !important;
 }
 
+.mce-fullscreen { 
+    z-index: 981 !important; 
+}
+
+.uk-htmleditor-content,
+.uk-htmleditor-navbar {
+    border: none;
+}
+.uk-htmleditor-navbar {
+    position: relative;
+    box-shadow:0 1px 2px rgba(0, 0, 0, 0.2);
+    z-index: 1;
+}
+
 .jsoneditor {
-    border-color: #ccc !important;
-    border-color: #ccc !important;
+    border: none !important;
 }
 
 div.jsoneditor-tree {
@@ -188,7 +235,8 @@ div.jsoneditor-tree {
 
 .jsoneditor-menu {
     background-color: @global-contrast-color !important;
-    border-color: #ccc !important;
+    border: none !important;
+    box-shadow:0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .jsoneditor-menu input {
@@ -214,6 +262,11 @@ div.jsoneditor-menu>div.jsoneditor-modes>button {
 
 .CodeMirror .CodeMirror-activeline-background { background: #e8f2ff; }
 .CodeMirror .CodeMirror-matchingbracket { outline:1px solid grey; color:black !important; }
+
+.CodeMirror .CodeMirror-gutters {
+    border: none;
+    background-color: @global-contrast-color;
+}
 
 .CodeMirror-hints {
   z-index: 1010;

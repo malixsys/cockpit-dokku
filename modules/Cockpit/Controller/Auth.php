@@ -1,4 +1,12 @@
 <?php
+/**
+ * This file is part of the Cockpit project.
+ *
+ * (c) Artur Heinze - 🅰🅶🅴🅽🆃🅴🅹🅾, http://agentejo.com
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
 
 namespace Cockpit\Controller;
 
@@ -9,6 +17,11 @@ class Auth extends \LimeExtra\Controller {
 
         if ($data = $this->param('auth')) {
 
+            if (isset($data['user']) && $this->app->helper('utils')->isEmail($data['user'])) {
+                $data['email'] = $data['user'];
+                $data['user']  = '';
+            }
+
             $user = $this->module('cockpit')->authenticate($data);
 
             if ($user && !$this->module('cockpit')->hasaccess('cockpit', 'backend', @$user['group'])) {
@@ -16,8 +29,10 @@ class Auth extends \LimeExtra\Controller {
             }
 
             if ($user) {
-                $this->app->trigger('cockpit.account.login', [&$user]);
+                $this->app->trigger('cockpit.authentication.success', [&$user]);
                 $this->module('cockpit')->setUser($user);
+            } else {
+                $this->app->trigger('cockpit.authentication.failed', [$data['user']]);
             }
 
             if ($this->req_is('ajax')) {
@@ -25,6 +40,7 @@ class Auth extends \LimeExtra\Controller {
             } else {
                 $this->reroute('/');
             }
+
         }
 
         return false;
@@ -70,7 +86,7 @@ class Auth extends \LimeExtra\Controller {
                 return $this->stop(['error' => $this('i18n')->get('User does not exist')], 404);
             }
 
-            $token  = uniqid('rp-').'-'.time();
+            $token  = uniqid('rp-'.bin2hex(random_bytes(16)));
             $target = $this->app->param('', $this->app->getSiteUrl(true).'/auth/newpassword');
             $data   = ['_id' => $user['_id'], '_reset_token' => $token];
 

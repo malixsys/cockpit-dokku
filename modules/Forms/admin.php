@@ -1,4 +1,12 @@
 <?php
+/**
+ * This file is part of the Cockpit project.
+ *
+ * (c) Artur Heinze - 🅰🅶🅴🅽🆃🅴🅹🅾, http://agentejo.com
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
 
 $app->on('admin.init', function() {
 
@@ -15,7 +23,7 @@ $app->on('admin.init', function() {
     $this->bindClass('Forms\\Controller\\Admin', 'forms');
 
     // add to modules menu
-    $this('admin')->addMenuItem('modules', [
+    $this->helper('admin')->addMenuItem('modules', [
         'label' => 'Forms',
         'icon'  => 'forms:icon.svg',
         'route' => '/forms',
@@ -58,7 +66,7 @@ $app->on('admin.init', function() {
     // dashboard widgets
     $this->on('admin.dashboard.widgets', function($widgets) {
 
-        $forms = $this->module('forms')->forms(true);
+        $forms = $this->module('forms')->forms(false);
 
         $widgets[] = [
             'name'    => 'forms',
@@ -68,5 +76,17 @@ $app->on('admin.init', function() {
 
     }, 100);
 
+    // register events for autocomplete
+    $this->on('cockpit.webhook.events', function($triggers) {
+
+        foreach([
+            'forms.save.after',
+            'forms.save.after.{$name}',
+            'forms.save.before',
+            'forms.save.before.{$name}',
+            'forms.submit.after',
+            'forms.submit.before',
+        ] as &$evt) { $triggers[] = $evt; }
+    });
 
 });

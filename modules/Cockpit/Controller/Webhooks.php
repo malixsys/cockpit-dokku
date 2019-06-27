@@ -1,4 +1,12 @@
 <?php
+/**
+ * This file is part of the Cockpit project.
+ *
+ * (c) Artur Heinze - 🅰🅶🅴🅽🆃🅴🅹🅾, http://agentejo.com
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
 
 namespace Cockpit\Controller;
 
@@ -42,7 +50,35 @@ class Webhooks extends \Cockpit\AuthController {
             }
         }
 
-        return $this->render('cockpit:views/webhooks/webhook.php', compact('webhook'));
+        $triggers = new \ArrayObject([
+            'admin.init',
+            'app.{$controller}.init',
+            'cockpit.account.login',
+            'cockpit.account.logout',
+            'cockpit.api.authenticate',
+            'cockpit.api.erroronrequest',
+            'cockpit.assets.list',
+            'cockpit.assets.remove',
+            'cockpit.assets.save',
+            'cockpit.bootstrap',
+            'cockpit.clearcache',
+            'cockpit.export',
+            'cockpit.import',
+            'cockpit.media.removefiles',
+            'cockpit.media.rename',
+            'cockpit.media.upload',
+            'cockpit.request.error',
+            'cockpit.rest.init',
+            'cockpit.update.after',
+            'cockpit.update.before',
+            'shutdown',
+        ]);
+
+        $this->app->trigger('cockpit.webhook.events', [$triggers]);
+
+        $triggers = $triggers->getArrayCopy();
+
+        return $this->render('cockpit:views/webhooks/webhook.php', compact('webhook', 'triggers'));
     }
 
     public function save() {

@@ -1,4 +1,12 @@
 <?php
+/**
+ * This file is part of the Cockpit project.
+ *
+ * (c) Artur Heinze - 🅰🅶🅴🅽🆃🅴🅹🅾, http://agentejo.com
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
 
 namespace MongoLite;
 
@@ -50,7 +58,7 @@ class Collection {
 
             foreach ($document as &$doc) {
 
-                if (!is_array($doc)) continue;
+                if (!\is_array($doc)) continue;
 
                 $res = $this->_insert($doc);
 
@@ -60,7 +68,7 @@ class Collection {
                 }
             }
             $this->database->connection->commit();
-            return count($document);
+            return \count($document);
         } else {
             return $this->_insert($document);
         }
@@ -75,18 +83,18 @@ class Collection {
 
         $table           = $this->name;
         $document['_id'] = isset($document['_id']) ? $document['_id'] : createMongoDbLikeId();
-        $data            = ['document' => json_encode($document, JSON_UNESCAPED_UNICODE)];
+        $data            = ['document' => \json_encode($document, JSON_UNESCAPED_UNICODE)];
 
         $fields = [];
         $values = [];
 
         foreach($data as $col=>$value){
             $fields[] = "`{$col}`";
-            $values[] = (is_null($value) ? 'NULL' : $this->database->connection->quote($value));
+            $values[] = (\is_null($value) ? 'NULL' : $this->database->connection->quote($value));
         }
 
-        $fields = implode(',', $fields);
-        $values = implode(',', $values);
+        $fields = \implode(',', $fields);
+        $values = \implode(',', $values);
 
         $sql = "INSERT INTO {$table} ({$fields}) VALUES ({$values})";
         $res = $this->database->connection->exec($sql);
@@ -94,7 +102,7 @@ class Collection {
         if ($res){
             return $this->database->connection->lastInsertId();
         } else {
-            trigger_error('SQL Error: '.implode(', ', $this->database->connection->errorInfo()).":\n".$sql);
+            trigger_error('SQL Error: '.\implode(', ', $this->database->connection->errorInfo()).":\n".$sql);
             return false;
         }
     }
@@ -107,7 +115,7 @@ class Collection {
      */
     public function save(&$document) {
 
-        return isset($document["_id"]) ? $this->update(array("_id" => $document["_id"]), $document) : $this->insert($document);
+        return isset($document['_id']) ? $this->update(array('_id' => $document['_id']), $document) : $this->insert($document);
     }
 
     /**
@@ -117,7 +125,7 @@ class Collection {
      * @param  array $data
      * @return integer
      */
-    public function update($criteria, $data) {
+    public function update($criteria, $data, $merge = true) {
 
         $sql    = 'SELECT id, document FROM '.$this->name.' WHERE document_criteria("'.$this->database->registerCriteriaFunction($criteria).'", document)';
         $stmt   = $this->database->connection->query($sql);
@@ -125,9 +133,11 @@ class Collection {
 
         foreach ($result as &$doc) {
 
-            $document = array_merge(json_decode($doc['document'], true), $data);
+            $_doc            = \json_decode($doc['document'], true);
+            $document        = $merge ? \array_merge($_doc, $data) : $data;
+            $document['_id'] = $_doc['_id'];
 
-            $sql = "UPDATE ".$this->name." SET document=".$this->database->connection->quote(json_encode($document, JSON_UNESCAPED_UNICODE))." WHERE id=".$doc['id'];
+            $sql = 'UPDATE '.$this->name.' SET document='.$this->database->connection->quote(json_encode($document, JSON_UNESCAPED_UNICODE)).' WHERE id='.$doc['id'];
 
             $this->database->connection->exec($sql);
         }
@@ -192,7 +202,7 @@ class Collection {
 
         if (!in_array($newname, $this->database->getCollectionNames())) {
 
-            $this->database->connection->exec("ALTER TABLE '.$this->name.' RENAME TO {$newname}");
+            $this->database->connection->exec('ALTER TABLE '.$this->name.' RENAME TO '.$newname);
 
             $this->name = $newname;
 

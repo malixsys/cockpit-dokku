@@ -104,16 +104,17 @@
 
             if (['input', 'select', 'textarea'].indexOf(nodeType) !== -1) {
 
-                var isCheckbox = (ele.nodeName == 'INPUT' && ele.getAttribute('type') == 'checkbox');
-
                 ele.addEventListener(ele.getAttribute('bind-event') || defaultEvt, _.debounce(function() {
+
+                    var isCheckbox = (ele.nodeName == 'INPUT' && ele.getAttribute('type') == 'checkbox'),
+                        isNumeric = (ele.nodeName == 'INPUT' && ele.getAttribute('type') == 'number');
 
                     try {
 
                         if (isCheckbox) {
                             ele.$setValue(ele.checked);
                         } else {
-                            ele.$setValue(ele.value);
+                            ele.$setValue(isNumeric ? Number(ele.value || 0) : ele.value);
                         }
 
                     } catch(e) {}
@@ -121,6 +122,9 @@
                 }, 200), false);
 
                 ele.$updateValue = (function(fn, body) {
+
+                    var isCheckbox = (ele.nodeName == 'INPUT' && ele.getAttribute('type') == 'checkbox'),
+                        isNumeric = (ele.nodeName == 'INPUT' && ele.getAttribute('type') == 'number');
 
                     if (isCheckbox) {
                         body = 'input.checked = val ? true:false;';
@@ -136,7 +140,7 @@
                             return;
                         }
 
-                        fn(ele, value);
+                        fn(ele, isNumeric ? Number(value || 0) : value);
                     };
 
                 })();
@@ -152,8 +156,10 @@
                     ele.$updateValue = function(value, field) {
 
                         if (ele._tag.$updateValue) {
-                            ele._tag.$updateValue.apply(ele._tag, arguments);
+                            ele._tag.$updateValue.apply(ele._tag, [value, field, ele.__bindField != field]);
                         }
+
+                        ele.__bindField = field;
                     };
 
                     if (ele._tag.$initBind) {

@@ -1,4 +1,12 @@
 <?php
+/**
+ * This file is part of the Cockpit project.
+ *
+ * (c) Artur Heinze - 🅰🅶🅴🅽🆃🅴🅹🅾, http://agentejo.com
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
 
 $this->module('collections')->extend([
 
@@ -274,7 +282,7 @@ $this->module('collections')->extend([
 
             if (isset($_collection['fields'])) {
 
-                foreach($_collection['fields'] as $field) {
+                foreach ($_collection['fields'] as $field) {
 
                     // skip missing fields on update
                     if (!isset($entry[$field['name']]) && $isUpdate) {
@@ -319,15 +327,18 @@ $this->module('collections')->extend([
                         case 'password':
 
                             if ($value) {
-
                                 $value = $this->app->hash($value);
                             }
 
                             break;
                     }
 
+                    // check required
                     if (!$isUpdate && isset($field['required']) && $field['required'] && !$value) {
-                        // Todo
+
+                        if (!is_numeric($value) && $value !== false && empty($value)) {
+                            $this->app->stop(['error' => "The {$field['name']} is required!"], 422);
+                        }
                     }
 
                     if ($isUpdate && $field['type'] == 'password' && !$value && isset($entry[$field['name']])) {
@@ -551,7 +562,7 @@ $this->module('collections')->extend([
 
                     foreach ($languages as $l) {
 
-                        if (isset($entry["{$name}_{$l}"])) {
+                        if (isset($entry["{$name}_{$l}"]) && $entry["{$name}_{$l}"] !== '') {
 
                             if ($l == $lang) {
 
@@ -595,13 +606,17 @@ function cockpit_populate_collection(&$items, $maxlevel = -1, $level = 0, $field
 
     foreach ($items as $k => &$v) {
 
+        if (!is_array($v)) {
+            continue; 
+        }
+
         if (is_array($items[$k])) {
             $items[$k] = cockpit_populate_collection($items[$k], $maxlevel, ($level + 1), $fieldsFilter);
         }
 
         if ($level > 0 && isset($v['_id'], $v['link'])) {
             $link = $v['link'];
-            $items[$k] = cockpit('collections')->_resolveLinkedItem($v['link'], $v['_id'], $fieldsFilter);
+            $items[$k] = cockpit('collections')->_resolveLinkedItem($v['link'], (string)$v['_id'], $fieldsFilter);
             $items[$k]['_link'] = $link;
             $items[$k] = cockpit_populate_collection($items[$k], $maxlevel, ($level + 1), $fieldsFilter);
         }

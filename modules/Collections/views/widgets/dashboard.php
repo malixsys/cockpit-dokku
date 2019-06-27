@@ -24,7 +24,7 @@
                     <li>
                         <div class="uk-grid uk-grid-small">
                             <div class="uk-flex-item-1 uk-text-truncate">
-                                <a href="@route('/collections/entries/'.$col['name'])">
+                                <a class="uk-link-muted" href="@route('/collections/entries/'.$col['name'])">
 
                                     <img class="uk-margin-small-right uk-svg-adjust" src="@url(isset($col['icon']) && $col['icon'] ? 'assets:app/media/icons/'.$col['icon']:'collections:icon.svg')" width="18px" alt="icon" data-uk-svg>
 
@@ -33,7 +33,7 @@
                             </div>
                             <div>
                                 @if($app->module('collections')->hasaccess($col['name'], 'entries_create'))
-                                <a class="uk-text-muted" href="@route('/collections/entry')/{{ $col['name'] }}" title="@lang('Add entry')" data-uk-tooltip="pos:'right'">
+                                <a class="uk-text-muted" href="@route('/collections/entry')/{{ $col['name'] }}" title="@lang('Add entry')" aria-label="@lang('Add entry')" data-uk-tooltip="pos:'right'">
                                     <img src="@url('assets:app/media/icons/plus-circle.svg')" width="1.2em" data-uk-svg />
                                 </a>
                                 @endif

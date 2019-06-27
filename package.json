@@ -1,9 +1,9 @@
 {
     "name": "cockpit-next",
-    "version": "0.8.7",
+    "version": "1.1.824",
     "license": "MIT",
     "scripts": {
-        "deploy": "git add -A && git commit --all --amend --no-edit && git push malix next:master -f",
+        "deploy": "git add -A && git commit --all --amend --no-edit && git push origin next -f && git push dokku next:master -f",
         "build": "npm run build-style && npm run build-components",
         "build-style": "lessc assets/app/css/style.less > assets/app/css/style.css -x",
         "build-components": "riot modules/Cockpit/assets/components modules/Cockpit/assets/components.js",
