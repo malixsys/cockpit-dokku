@@ -1,4 +1,12 @@
 <?php
+/**
+ * This file is part of the Cockpit project.
+ *
+ * (c) Artur Heinze - 🅰🅶🅴🅽🆃🅴🅹🅾, http://agentejo.com
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
 
 namespace Cockpit\Controller;
 
@@ -11,7 +19,11 @@ class Media extends \Cockpit\AuthController {
         $cmd       = $this->param('cmd', false);
         $mediapath = $this->module('cockpit')->getGroupVar('finder.path', '');
 
-        $this->root = rtrim($this->app->path("site:{$mediapath}"), '/');
+        if (!$mediapath && !$this->module('cockpit')->isSuperAdmin()) {
+            $this->root = rtrim($this->app->path("#uploads:"), '/');
+        } else {
+            $this->root = COCKPIT_DIR == COCKPIT_ENV_ROOT ? rtrim($this->app->path("site:{$mediapath}"), '/') : COCKPIT_ENV_ROOT;
+        }
 
         if (file_exists($this->root) && in_array($cmd, get_class_methods($this))){
 
@@ -95,13 +107,19 @@ class Media extends \Cockpit\AuthController {
 
                 // clean filename
                 $clean = preg_replace('/[^a-zA-Z0-9-_\.]/','', str_replace(' ', '-', $files['name'][$i]));
+                $_file = $targetpath.'/'.$clean;
 
-                if (!$files['error'][$i] && $this->_isFileTypeAllowed($clean) && move_uploaded_file($files['tmp_name'][$i], $targetpath.'/'.$clean)) {
+                if (!$files['error'][$i] && $this->_isFileTypeAllowed($clean) && move_uploaded_file($files['tmp_name'][$i], $_file)) {
                     $uploaded[]  = $files['name'][$i];
-                    $_uploaded[] = $targetpath.'/'.$clean;
+                    $_uploaded[] = $_file;
+
+                    if (\preg_match('/\.(svg|xml)$/i', $clean)) {
+                        file_put_contents($_file, \SVGSanitizer::clean(\file_get_contents($_file)));
+                    }
+
                 } else {
-                    $failed[]    = ['file' => $files['name'][$i], 'error' => $files['error'][$i]];
-                    $_failed[]   = $targetpath.'/'.$clean;
+                    $failed[]  = ['file' => $files['name'][$i], 'error' => $files['error'][$i]];
+                    $_failed[] = $_file;
                 }
             }
         }
@@ -237,6 +255,8 @@ class Media extends \Cockpit\AuthController {
 
     protected function unzip() {
 
+        \session_write_close(); // improve concurrency loading
+
         $path    = $this->_getPathParameter();
 
         if (!$path) return false;
@@ -306,6 +326,8 @@ class Media extends \Cockpit\AuthController {
 
     protected function downloadfolder() {
 
+        \session_write_close(); // improve concurrency loading
+
         $path   = $this->_getPathParameter();
 
         if (!$path) return false;
@@ -337,6 +359,8 @@ class Media extends \Cockpit\AuthController {
     }
 
     protected function getfilelist() {
+
+        \session_write_close(); // improve concurrency loading
 
         $list = [];
         $toignore = [
@@ -402,6 +426,10 @@ class Media extends \Cockpit\AuthController {
     protected function _isFileTypeAllowed($file) {
 
         $allowed = trim($this->module('cockpit')->getGroupVar('finder.allowed_uploads', $this->app->retrieve('allowed_uploads', '*')));
+
+        if (strtolower(pathinfo($file, PATHINFO_EXTENSION)) == 'php' && !$this->module('cockpit')->isSuperAdmin()) {
+            return false;
+        }
 
         if ($allowed == '*') {
             return true;

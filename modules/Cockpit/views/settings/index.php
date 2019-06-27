@@ -4,7 +4,7 @@
     </ul>
 </div>
 
-<div class="uk-grid uk-grid-gutter uk-grid-match uk-grid-width-medium-1-4 uk-text-center">
+<div class="uk-grid uk-grid-gutter uk-grid-match uk-grid-width-medium-1-4 uk-grid-width-xlarge-1-5 uk-text-center">
 
     @if($app['user']['group']=='admin')
     <div>
@@ -14,7 +14,7 @@
             <div class="uk-text-truncate uk-margin">
                 @lang('Settings')
             </div>
-            <a class="uk-position-cover" href="@route('/settings/edit')"></a>
+            <a class="uk-position-cover" aria-label="@lang('Settings')" href="@route('/settings/edit')"></a>
         </div>
     </div>
     @endif
@@ -28,7 +28,7 @@
             <div class="uk-text-truncate uk-margin">
                 @lang('Accounts')
             </div>
-            <a class="uk-position-cover" href="@route('/accounts/index')"></a>
+            <a class="uk-position-cover" aria-label="@lang('Accounts')" href="@route('/accounts/index')"></a>
         </div>
     </div>
     @endif
@@ -42,7 +42,7 @@
             <div class="uk-text-truncate uk-margin">
                 @lang('API Access')
             </div>
-            <a class="uk-position-cover" href="@route('/restadmin/index')"></a>
+            <a class="uk-position-cover" aria-label="@lang('API Access')" href="@route('/restadmin/index')"></a>
         </div>
     </div>
     @endif
@@ -56,7 +56,7 @@
             <div class="uk-text-truncate uk-margin">
                 @lang('Webhooks')
             </div>
-            <a class="uk-position-cover" href="@route('/webhooks/index')"></a>
+            <a class="uk-position-cover" aria-label="@lang('Webhooks')" href="@route('/webhooks/index')"></a>
         </div>
     </div>
     @endif
@@ -70,7 +70,7 @@
             <div class="uk-text-truncate uk-margin">
                 @lang('System')
             </div>
-            <a class="uk-position-cover" href="@route('/settings/info')"></a>
+            <a class="uk-position-cover" aria-label="@lang('System')" href="@route('/settings/info')"></a>
         </div>
     </div>
     @endif

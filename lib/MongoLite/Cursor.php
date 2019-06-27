@@ -1,4 +1,12 @@
 <?php
+/**
+ * This file is part of the Cockpit project.
+ *
+ * (c) Artur Heinze - 🅰🅶🅴🅽🆃🅴🅹🅾, http://agentejo.com
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
 
 namespace MongoLite;
 
@@ -68,7 +76,7 @@ class Cursor implements \Iterator {
 
         if (!$this->criteria) {
 
-            $stmt = $this->collection->database->connection->query("SELECT COUNT(*) AS C FROM ".$this->collection->name);
+            $stmt = $this->collection->database->connection->query('SELECT COUNT(*) AS C FROM '.$this->collection->name);
 
         } else {
 
@@ -80,7 +88,7 @@ class Cursor implements \Iterator {
                 $sql[] = 'LIMIT '.$this->limit;
             }
 
-            $stmt = $this->collection->database->connection->query(implode(" ", $sql));
+            $stmt = $this->collection->database->connection->query(\implode(' ', $sql));
         }
 
         $res  = $stmt->fetch(\PDO::FETCH_ASSOC);
@@ -171,10 +179,10 @@ class Cursor implements \Iterator {
             $orders = [];
 
             foreach ($this->sort as $field => $direction) {
-                $orders[] = 'document_key("'.$field.'", document) '.($direction==-1 ? "DESC":"ASC");
+                $orders[] = 'document_key("'.$field.'", document) '.($direction==-1 ? 'DESC':'ASC');
             }
 
-            $sql[] = 'ORDER BY '.implode(',', $orders);
+            $sql[] = 'ORDER BY '.\implode(',', $orders);
         }
 
         if ($this->limit) {
@@ -192,7 +200,7 @@ class Cursor implements \Iterator {
         if (!$this->projection) {
 
             foreach ($result as &$doc) {
-                $documents[] = json_decode($doc['document'], true);
+                $documents[] = \json_decode($doc['document'], true);
             }
 
         } else {
@@ -211,11 +219,11 @@ class Cursor implements \Iterator {
 
             foreach ($result as &$doc) {
 
-                $item = json_decode($doc['document'], true);
+                $item = \json_decode($doc['document'], true);
                 $id   = $item['_id'];
 
                 if ($exclude) {
-                    $item = array_diff_key($item, $exclude);
+                    $item = \array_diff_key($item, $exclude);
                 }
 
                 if ($include) {

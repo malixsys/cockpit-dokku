@@ -1,4 +1,12 @@
 <?php
+/**
+ * This file is part of the Cockpit project.
+ *
+ * (c) Artur Heinze - 🅰🅶🅴🅽🆃🅴🅹🅾, http://agentejo.com
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
 
 namespace Lime\Helper;
 
@@ -49,7 +57,7 @@ class Img {
     public function thumbnail($width, $height, $anchor = 'center') {
 
 
-        if (preg_match('/\d \d/', $anchor)) {
+        if (\preg_match('/\d \d/', $anchor)) {
 
             // Determine aspect ratios
             $currentRatio = $this->image->getHeight() / $this->image->getWidth();
@@ -62,11 +70,11 @@ class Img {
               $this->image->resize($width, null);
             }
 
-            $anchor = explode(' ', $anchor);
+            $anchor = \explode(' ', $anchor);
 
-            $x1 = floor(($this->image->getWidth() * $anchor[0]) - ($width * $anchor[0]));
+            $x1 = \floor(($this->image->getWidth() * $anchor[0]) - ($width * $anchor[0]));
             $x2 = $width + $x1;
-            $y1 = floor(($this->image->getHeight() * $anchor[1]) - ($height * $anchor[1]));
+            $y1 = \floor(($this->image->getHeight() * $anchor[1]) - ($height * $anchor[1]));
             $y2 = $height + $y1;
 
             return $this->image->crop($x1, $y1, $x2, $y2);
@@ -77,7 +85,7 @@ class Img {
 
     public function __call($method, $args) {
 
-        $ret = call_user_func_array([$this->image, $method], $args);
+        $ret = \call_user_func_array([$this->image, $method], $args);
 
         if ($ret !== $this->image) {
             return $ret;

@@ -22,7 +22,7 @@
 
                                 <span class="uk-button uk-button-large { getRefValue('filtertype') && 'uk-button-primary'} uk-text-capitalize"><i class="uk-icon-eye uk-margin-small-right"></i> { getRefValue('filtertype') || App.i18n.get('All') }</span>
 
-                                <select ref="filtertype" onchange="{ updateFilter }">
+                                <select ref="filtertype" onchange="{ updateFilter }" aria-label="{App.i18n.get('Mime Type')}">
                                     <option value="">All</option>
                                     <option value="image">Image</option>
                                     <option value="video">Video</option>
@@ -37,7 +37,7 @@
                         <div class="uk-flex-item-1">
                             <div class="uk-form-icon uk-display-block uk-width-1-1">
                                 <i class="uk-icon-search"></i>
-                                <input class="uk-width-1-1 uk-form-large" type="text" ref="filtertitle" onchange="{ updateFilter }">
+                                <input class="uk-width-1-1 uk-form-large" type="text" aria-label="{ App.i18n.get('Search assets') }" ref="filtertitle" onchange="{ updateFilter }">
                             </div>
                         </div>
                     </div>
@@ -51,12 +51,12 @@
                     <button class="uk-button uk-button-large uk-button-link" onclick="{addFolder}">{ App.i18n.get('Add folder') }</button>
 
                     <span class="uk-button-group uk-button-large">
-                        <button class="uk-button uk-button-large {listmode=='list' && 'uk-button-primary'}" type="button" onclick="{ toggleListMode }"><i class="uk-icon-list"></i></button>
-                        <button class="uk-button uk-button-large {listmode=='grid' && 'uk-button-primary'}" type="button" onclick="{ toggleListMode }"><i class="uk-icon-th"></i></button>
+                        <button class="uk-button uk-button-large {listmode=='list' && 'uk-button-primary'}" type="button" onclick="{ toggleListMode }" aria-label="{ App.i18n.get('Switch to list-mode') }"><i class="uk-icon-list"></i></button>
+                        <button class="uk-button uk-button-large {listmode=='grid' && 'uk-button-primary'}" type="button" onclick="{ toggleListMode }" aria-label="{ App.i18n.get('Switch to tile-mode') }"><i class="uk-icon-th"></i></button>
                     </span>
 
                     <span class="uk-button uk-button-large uk-button-primary uk-form-file">
-                        <input class="js-upload-select" type="file" multiple="true">
+                        <input class="js-upload-select" aria-label="{ App.i18n.get('Select file') }" type="file" multiple="true">
                         <i class="uk-icon-upload"></i>
                     </span>
                 </div>
@@ -79,7 +79,7 @@
 
                     <strong class="uk-text-small uk-text-muted"><i class="uk-icon-folder-o uk-margin-small-right"></i> {folders.length} {App.i18n.get('Folders')}</strong>
 
-                    <div class="uk-grid uk-grid-small uk-grid-match uk-grid-width-medium-1-4">
+                    <div class="uk-grid uk-grid-small uk-grid-match uk-grid-width-medium-1-4 uk-grid-width-xlarge-1-5">
                         <div class="uk-grid-margin" each="{ folder,idx in folders }">
                             <div class="uk-panel uk-panel-box uk-panel-card">
                                 <div class="uk-flex">
@@ -115,8 +115,8 @@
 
                     <div class="uk-grid uk-grid-match uk-grid-small uk-grid-width-medium-1-5" if="{ listmode=='grid' }">
                         <div class="uk-grid-margin" each="{ asset,idx in assets }" onclick="{ select }">
-                            <div class="uk-panel uk-panel-box uk-panel-card { selected.length && selected.indexOf(asset) != -1 ? 'uk-selected':''}">
-                                <div class="uk-overlay uk-display-block uk-position-relative">
+                            <div class="uk-panel uk-panel-box uk-panel-card uk-padding-remove { selected.length && selected.indexOf(asset) != -1 ? 'uk-selected':''}">
+                                <div class="uk-overlay uk-display-block uk-position-relative { asset.mime.match(/^image\//) && 'uk-bg-transparent-pattern' }">
                                     <canvas class="uk-responsive-width" width="200" height="150"></canvas>
                                     <div class="uk-position-absolute uk-position-cover uk-flex uk-flex-middle">
                                         <div class="uk-width-1-1 uk-text-center">
@@ -125,15 +125,17 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="uk-text-small uk-margin-small-top uk-text-truncate">
-                                    <a onclick="{ parent.edit }">{ asset.title }</a>
-                                </div>
-                                <div class="uk-text-small uk-text-muted uk-margin-small-top uk-flex">
-                                    <strong>{ asset.mime }</strong>
-                                    <span class="uk-flex-item-1 uk-margin-small-left uk-margin-small-right">{ App.Utils.formatSize(asset.size) }</span>
-                                    <a href="{ASSETS_URL+asset.path}" if="{ asset.mime.match(/^image\//) }" data-uk-lightbox="type:'image'" title="{ asset.width && [asset.width, asset.height].join('x') }">
-                                        <i class="uk-icon-search"></i>
-                                    </a>
+                                <div class="uk-panel-body uk-text-small">
+                                    <div class="uk-text-truncate">
+                                        <a onclick="{ parent.edit }">{ asset.title }</a>
+                                    </div>
+                                    <div class="uk-text-muted uk-margin-small-top uk-flex">
+                                        <strong>{ asset.mime }</strong>
+                                        <span class="uk-flex-item-1 uk-margin-small-left uk-margin-small-right">{ App.Utils.formatSize(asset.size) }</span>
+                                        <a href="{ASSETS_URL+asset.path}" if="{ asset.mime.match(/^image\//) }" data-uk-lightbox="type:'image'" title="{ asset.width && [asset.width, asset.height].join('x') }" aria-label="{ asset.width && [asset.width, asset.height].join('x') }">
+                                            <i class="uk-icon-search"></i>
+                                        </a>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -156,7 +158,7 @@
 
                                     <span if="{ asset.mime.match(/^image\//) == null }"><i class="uk-text-muted uk-icon-{ parent.getIconCls(asset.path) }"></i></span>
 
-                                    <a href="{ASSETS_URL+asset.path}" if="{ asset.mime.match(/^image\//) }" data-uk-lightbox="type:'image'" title="{ asset.width && [asset.width, asset.height].join('x') }">
+                                    <a href="{ASSETS_URL+asset.path}" if="{ asset.mime.match(/^image\//) }" data-uk-lightbox="type:'image'" title="{ asset.width && [asset.width, asset.height].join('x') }" aria-label="{ asset.width && [asset.width, asset.height].join('x') }">
                                         <cp-thumbnail src="{ASSETS_URL+asset.path}" width="20" height="20"></cp-thumbnail>
                                     </a>
                                 </td>
@@ -189,7 +191,7 @@
 
             </div>
 
-            <div class="uk-margin uk-flex uk-flex-middle uk-noselect" if="{ pages > 1 }">
+            <div class="uk-margin uk-flex uk-flex-middle uk-noselect" if="{!loading && pages > 1 }">
 
                 <ul class="uk-breadcrumb uk-margin-remove">
                     <li class="uk-active"><span>{ page }</span></li>
@@ -226,10 +228,17 @@
         
         <cp-asset asset="{asset._id}"></cp-asset>
         
-        <div class="uk-margin-top">
+        <div class="uk-margin-top" show="{modal}">
             <button type="button" class="uk-button uk-button-large uk-button-primary" onclick="{ saveAsset }">{ App.i18n.get('Save') }</button>
             <a class="uk-button uk-button-large uk-button-link" onclick="{ cancelAssetEdit }">{ App.i18n.get('Cancel') }</a>
         </div>
+
+        <cp-actionbar show="{!modal}">
+            <div class="uk-container uk-container-center">
+                <button type="button" class="uk-button uk-button-large uk-button-primary" onclick="{ saveAsset }">{ App.i18n.get('Save') }</button>
+                <a class="uk-button uk-button-large uk-button-link" onclick="{ cancelAssetEdit }">{ App.i18n.get('Cancel') }</a>
+            </div>
+        </cp-actionbar>
     </div>
 
 
@@ -378,8 +387,8 @@
             if (this.refs.filtertitle.value) {
 
                 this.filter.$or = [];
-                this.filter.$or.push({title: {'$regex':this.refs.filtertitle.value}});
-                this.filter.$or.push({tags: {'$has':this.refs.filtertitle.value}});
+                this.filter.$or.push({title: {'$regex':this.refs.filtertitle.value, '$options': 'i'}});
+                this.filter.$or.push({tags: this.refs.filtertitle.value});
             }
 
             if (this.refs.filtertype.value) {
@@ -635,7 +644,7 @@
 
                   <div class="uk-form-row">
                       <label class="uk-text-small uk-text-bold">{ App.i18n.get('Description') }</label>
-                      <textarea class="uk-width-1-1" bind="asset.description"></textarea>
+                      <textarea class="uk-width-1-1" bind="asset.description" bind-event="input"></textarea>
                   </div>
 
                   <div class="uk-margin-large-top uk-text-center" if="{asset}">
@@ -645,7 +654,7 @@
                           <div class="cp-assets-fp" title="Focal Point" data-uk-tooltip></div>
                       </div>
                       <div class="uk-margin-top uk-text-truncate uk-text-small uk-text-muted">
-                          <a class="uk-button uk-button-outline uk-text-primary" href="{ASSETS_URL+asset.path}" target="_blank"><i class="uk-icon-link"></i></a>
+                          <a class="uk-button uk-button-outline uk-text-primary" href="{ASSETS_URL+asset.path}" target="_blank"  title="{ App.i18n.get('Direct link to asset') }" data-uk-tooltip><i class="uk-icon-link"></i></a>
                       </div>
                   </div>
               </div>

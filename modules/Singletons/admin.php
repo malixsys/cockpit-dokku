@@ -1,9 +1,16 @@
 <?php
+/**
+ * This file is part of the Cockpit project.
+ *
+ * (c) Artur Heinze - 🅰🅶🅴🅽🆃🅴🅹🅾, http://agentejo.com
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
 
 $app->on('admin.init', function() {
 
-
-    if (!$this->module('cockpit')->getGroupRights('singletons') && !$this->module('singletons')->getSingletonInGroup()) {
+    if (!$this->module('cockpit')->getGroupRights('singletons') && !$this->module('singletons')->getSingletonsInGroup()) {
 
         $this->bind('/singletons/*', function() {
             return $this('admin')->denyRequest();
@@ -16,7 +23,7 @@ $app->on('admin.init', function() {
     $this->bindClass('Singletons\\Controller\\Admin', 'singletons');
 
     // add to modules menu
-    $this('admin')->addMenuItem('modules', [
+    $this->helper('admin')->addMenuItem('modules', [
         'label' => 'Singletons',
         'icon'  => 'singletons:icon.svg',
         'route' => '/singletons',
@@ -69,4 +76,24 @@ $app->on('admin.init', function() {
         ];
 
     }, 100);
+
+    // register events for autocomplete
+    $this->on('cockpit.webhook.events', function($triggers) {
+
+        foreach([
+            'singleton.getData.after',
+            'singleton.getData.after.{$name}',
+            'singleton.remove',
+            'singleton.remove.{$name}',
+            'singleton.save.after',
+            'singleton.save.after.{$name}',
+            'singleton.save.before',
+            'singleton.save.before.{$name}',
+            'singleton.saveData.after',
+            'singleton.saveData.after.{$name}',
+            'singleton.saveData.before',
+            'singleton.saveData.before.{$name}',
+        ] as &$evt) { $triggers[] = $evt; }
+    });
+
 });

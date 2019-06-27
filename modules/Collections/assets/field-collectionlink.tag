@@ -22,7 +22,10 @@
 
             <div class="uk-panel uk-panel-card uk-panel-box">
 
-                <div>{ link.display }</div>
+                <div class="uk-flex">
+                    <span class="uk-flex-item-1">{ getDisplay(link) }</span>
+                    <a class="uk-margin-small-left" href="{ App.route('/collections/entry/'+opts.link+'/'+link._id) }"><i class="uk-icon-link"></i></a>
+                </div>
 
                 <div class="uk-panel-box-footer uk-text-small uk-padding-bottom-remove">
                     <a class="uk-margin-small-right" onclick="{ showDialog }"><i class="uk-icon-link"></i> { App.i18n.get('Link item') }</a>
@@ -40,7 +43,10 @@
                     <li each="{l,index in link}" data-idx="{ index }">
                         <div class="uk-grid uk-grid-small uk-text-small">
                             <div><a onclick="{ removeListItem }"><i class="uk-icon-trash-o"></i></a></div>
-                            <div class="uk-flex-item-1">{ l.display }</div>
+                            <div class="uk-flex uk-flex-item-1">
+                                <span class="uk-flex-item-1">{ parent.getDisplay(l) }</span>
+                                <a class="uk-margin-small-left" href="{ App.route('/collections/entry/'+parent.opts.link+'/'+l._id) }"><i class="uk-icon-link"></i></a>
+                            </div>
                         </div>
                     </li>
                 </ul>
@@ -55,7 +61,7 @@
 
     </div>
 
-    <div class="uk-modal">
+    <div class="uk-modal" ref="modal">
 
         <div class="uk-modal-dialog uk-modal-dialog-large">
             <a href="" class="uk-modal-close uk-close"></a>
@@ -133,7 +139,7 @@
 
     this.mixin(RiotBindMixin);
 
-    var $this = this, modal, collections, _init = function(){
+    var $this = this, modal, collections, cache = {}, _init = function(){
 
         this.error = this.collection ? false:true;
 
@@ -173,7 +179,9 @@
 
         if (!opts.link) return;
 
-        modal = UIkit.modal(App.$('.uk-modal', this.root), {modal:false});
+        modal = UIkit.modal(this.refs.modal, {modal:false});
+
+        modal.element.appendTo(document.body)
 
         App.request('/collections/_collections').then(function(data){
             collections = data;
@@ -198,6 +206,10 @@
             });
         }
     });
+    
+    this.on('before-unmount', function() {
+        modal.element.appendTo(this.root);
+    });
 
     showDialog(){
 
@@ -216,11 +228,12 @@
 
     linkItem(e) {
 
+        var defaultField = this.collection.fields[0].name;
         var _entry = e.item.entry;
         var entry = {
             _id: _entry._id,
             link: this.collection.name,
-            display: _entry[opts.display] || _entry[this.collection.fields[0].name] || 'n/a'
+            display: _.get(_entry, opts.display) || typeof _entry[defaultField] === 'string' && _entry[defaultField] || 'n/a'
         };
 
         if (opts.multiple) {
@@ -235,6 +248,8 @@
         } else {
             this.link = entry;
         }
+        
+        cache[entry._id] = entry;
 
         setTimeout(function(){
             modal.hide();
@@ -258,10 +273,13 @@
         var entry;
 
         this.selected.forEach(function(_entry) {
+            
+            var defaultField = $this.collection.fields[0].name;
+            cache[_entry._id] = _entry;
             entry = {
                 _id: _entry._id,
                 link: $this.collection.name,
-                display: _entry[opts.display] || _entry[$this.collection.fields[0].name] || 'n/a'
+                display: _.get(_entry, opts.display) || typeof _entry[defaultField] === 'string' && _entry[defaultField] || 'n/a'
             };
 
             $this.link.push(entry);
@@ -398,6 +416,35 @@
                 this.selected.splice(idx, 1);
             }
         }
+    }
+    
+    getDisplay(link) {
+        
+        var display = '...';
+        
+        if (!cache[link._id]) {
+            
+            cache[link._id] = App.request('/collections/find', {collection:this.collection.name, options:{filter:{_id:link._id}}}).then(function(data){
+
+                if (!data.entries.length) {
+                    link.display = 'n/a';
+                    this.update();
+                    return;
+                }
+                
+                var _entry = data.entries[0];
+                
+                link.display = _entry[opts.display] || _entry[$this.collection.fields[0].name] || 'n/a';
+                
+                this.update();
+
+            }.bind(this))
+            
+        } else {
+            display = link.display
+        }
+        
+        return display;
     }
 
 

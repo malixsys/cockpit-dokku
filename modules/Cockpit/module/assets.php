@@ -1,4 +1,12 @@
 <?php
+/**
+ * This file is part of the Cockpit project.
+ *
+ * (c) Artur Heinze - 🅰🅶🅴🅽🆃🅴🅹🅾, http://agentejo.com
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
 
 $this->module('cockpit')->extend([
 
@@ -21,7 +29,7 @@ $this->module('cockpit')->extend([
         $assets    = [];
         $created   = time();
 
-        foreach ($files as &$file) {
+        foreach ($files as $idx => &$file) {
 
             // clean filename
             $name = basename($file);
@@ -52,6 +60,10 @@ $this->module('cockpit')->extend([
                 $asset['mime'] = 'unknown';
             }
 
+            if ($asset['mime'] == 'image/svg') {
+                $asset['mime'] = 'image/svg+xml';
+            }
+
             if ($asset['image'] && !preg_match('/\.svg$/i', $file)) {
 
                 $info = getimagesize($file);
@@ -67,15 +79,17 @@ $this->module('cockpit')->extend([
                         $asset['colors'] = [];
                     }
 
-                    foreach($asset['colors'] as &$color) {
+                    foreach ($asset['colors'] as &$color) {
                         $color = sprintf("#%02x%02x%02x", $color[0], $color[1], $color[2]);
                     }
                 }
             }
 
-            $opts = ['mimetype' => $asset['mime']];
+            $opts  = ['mimetype' => $asset['mime']];
+            $_meta = isset($meta[$idx]) && is_array($meta[$idx]) ? $meta[$idx] : $meta;
 
-            $this->app->trigger('cockpit.asset.upload', [&$asset, &$meta, &$opts]);
+            $this->app->trigger('cockpit.asset.upload', [&$asset, &$_meta, &$opts]);
+
             if (!$asset) {
                 continue;
             }
@@ -83,9 +97,11 @@ $this->module('cockpit')->extend([
             // move file
             $stream = fopen($file, 'r+');
             $this->app->filestorage->writeStream("assets://{$path}", $stream, $opts);
-            fclose($stream);
+            if(is_resource($stream)) {
+                fclose($stream);
+            }
 
-            foreach ($meta as $key => $val) {
+            foreach ($_meta as $key => $val) {
                 $asset[$key] = $val;
             }
 
@@ -126,6 +142,10 @@ $this->module('cockpit')->extend([
 
                     $_files[]   = $_file;
                     $uploaded[] = $files['name'][$i];
+
+                    if (\preg_match('/\.(svg|xml)$/i', $_file)) {
+                        file_put_contents($_file, \SVGSanitizer::clean(\file_get_contents($_file)));
+                    }
 
                 } else {
                     $failed[] = $files['name'][$i];

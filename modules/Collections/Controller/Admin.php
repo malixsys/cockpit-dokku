@@ -1,4 +1,12 @@
 <?php
+/**
+ * This file is part of the Cockpit project.
+ *
+ * (c) Artur Heinze - 🅰🅶🅴🅽🆃🅴🅹🅾, http://agentejo.com
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
 
 namespace Collections\Controller;
 
@@ -75,6 +83,12 @@ class Admin extends \Cockpit\AuthController {
             if (!$collection) {
                 return false;
             }
+
+            if (!$this->app->helper('admin')->isResourceEditableByCurrentUser($collection['_id'], $meta)) {
+                return $this->render('cockpit:views/base/locked.php', compact('meta'));
+            }
+
+            $this->app->helper('admin')->lockResourceId($collection['_id']);
         }
 
         // get field templates
@@ -116,15 +130,27 @@ class Admin extends \Cockpit\AuthController {
             return false;
         }
 
-        if (!isset($collection['_id']) && !$this->module('cockpit')->hasaccess('collections', 'create')) {
+        $isUpdate = isset($collection['_id']);
+
+        if (!$isUpdate && !$this->module('cockpit')->hasaccess('collections', 'create')) {
             return $this->helper('admin')->denyRequest();
         }
 
-        if (isset($collection['_id']) && !$this->module('collections')->hasaccess($collection['name'], 'collection_edit')) {
+        if ($isUpdate && !$this->module('collections')->hasaccess($collection['name'], 'collection_edit')) {
             return $this->helper('admin')->denyRequest();
         }
 
-        return $this->module('collections')->saveCollection($collection['name'], $collection, $rules);
+        if ($isUpdate && !$this->app->helper('admin')->isResourceEditableByCurrentUser($collection['_id'])) {
+            $this->stop(['error' => "Saving failed! Collection is locked!"], 412);
+        }
+
+        $collection = $this->module('collections')->saveCollection($collection['name'], $collection, $rules);
+
+        if (!$isUpdate) {
+            $this->app->helper('admin')->lockResourceId($collection['_id']);
+        }
+
+        return $collection;
     }
 
     public function entries($collection) {
@@ -138,8 +164,6 @@ class Admin extends \Cockpit\AuthController {
         if (!$collection) {
             return false;
         }
-
-        $count = $this->module('collections')->count($collection['name']);
 
         $collection = array_merge([
             'sortable' => false,
@@ -164,7 +188,7 @@ class Admin extends \Cockpit\AuthController {
             $view = $override;
         }
 
-        return $this->render($view, compact('collection', 'count'));
+        return $this->render($view, compact('collection'));
     }
 
     public function entry($collection, $id = null) {
@@ -200,6 +224,12 @@ class Admin extends \Cockpit\AuthController {
             if (!$entry) {
                 return false;
             }
+
+            if (!$this->app->helper('admin')->isResourceEditableByCurrentUser($id, $meta)) {
+                return $this->render('collections:views/locked.php', compact('meta', 'collection', 'entry'));
+            }
+
+            $this->app->helper('admin')->lockResourceId($id);
         }
 
         $context = _check_collection_rule($collection, 'read', ['options' => ['filter'=>[]]]);
@@ -244,14 +274,28 @@ class Admin extends \Cockpit\AuthController {
         $entry['_mby'] = $this->module('cockpit')->getUser('_id');
 
         if (isset($entry['_id'])) {
+
+            if (!$this->app->helper('admin')->isResourceEditableByCurrentUser($entry['_id'])) {
+                $this->stop(['error' => "Saving failed! Entry is locked!"], 412);
+            }
+
             $_entry = $this->module('collections')->findOne($collection['name'], ['_id' => $entry['_id']]);
             $revision = !(json_encode($_entry) == json_encode($entry));
+
         } else {
+
             $entry['_by'] = $entry['_mby'];
             $revision = true;
+
+            if ($collection['sortable']) {
+                 $entry['_o'] = $this->app->storage->count("collections/{$collection['_id']}", ['_pid' => ['$exists' => false]]);
+            }
+
         }
 
         $entry = $this->module('collections')->save($collection['name'], $entry, ['revision' => $revision]);
+
+        $this->app->helper('admin')->lockResourceId($entry['_id']);
 
         return $entry;
     }
@@ -342,6 +386,8 @@ class Admin extends \Cockpit\AuthController {
 
     public function find() {
 
+        \session_write_close();
+
         $collection = $this->app->param('collection');
         $options    = $this->app->param('options');
 
@@ -353,10 +399,13 @@ class Admin extends \Cockpit\AuthController {
             $options['filter'] = $this->_filter($options['filter'], $collection);
         }
 
+        $this->app->trigger("collections.admin.find.before.{$collection['name']}", [&$options]);
         $entries = $this->app->module('collections')->find($collection['name'], $options);
-        $count   = $this->app->module('collections')->count($collection['name'], isset($options['filter']) ? $options['filter'] : []);
-        $pages   = isset($options['limit']) ? ceil($count / $options['limit']) : 1;
-        $page    = 1;
+        $this->app->trigger("collections.admin.find.after.{$collection['name']}", [&$entries, $options]);
+        
+        $count = $this->app->module('collections')->count($collection['name'], isset($options['filter']) ? $options['filter'] : []);
+        $pages = isset($options['limit']) ? ceil($count / $options['limit']) : 1;
+        $page  = 1;
 
         if ($pages > 1 && isset($options['skip'])) {
             $page = ceil($options['skip'] / $options['limit']) + 1;

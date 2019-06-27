@@ -1,3 +1,7 @@
+<script>
+    window.__collections = {{ json_encode($collections) }};
+</script>
+
 <div>
     <ul class="uk-breadcrumb">
         <li class="uk-active"><span>@lang('Collections')</span></li>
@@ -13,7 +17,7 @@
             <div class="uk-form-icon uk-form uk-text-muted">
 
                 <i class="uk-icon-filter"></i>
-                <input class="uk-form-large uk-form-blank" type="text" ref="txtfilter" placeholder="@lang('Filter collections...')" onkeyup="{ updatefilter }">
+                <input class="uk-form-large uk-form-blank" type="text" ref="txtfilter" placeholder="@lang('Filter collections...')" aria-label="@lang('Filter collections...')" onkeyup="{ updatefilter }">
 
             </div>
 
@@ -49,15 +53,15 @@
             </ul>
         </div>
 
-        <div class="uk-grid uk-grid-match uk-grid-gutter uk-grid-width-1-1 uk-grid-width-medium-1-3 uk-grid-width-large-1-4 uk-margin-top">
+        <div class="uk-grid uk-grid-match uk-grid-gutter uk-grid-width-1-1 uk-grid-width-medium-1-3 uk-grid-width-large-1-4 uk-grid-width-xlarge-1-5 uk-margin-top">
 
             <div each="{ collection, idx in collections }" show="{ ingroup(collection.meta) && infilter(collection.meta) }">
 
-                <div class="uk-panel uk-panel-box uk-panel-card">
+                <div class="uk-panel uk-panel-box uk-panel-card uk-panel-card-hover">
 
                     <div class="uk-panel-teaser uk-position-relative">
                         <canvas width="600" height="350"></canvas>
-                        <a href="@route('/collections/entries')/{collection.name}" class="uk-position-cover uk-flex uk-flex-middle uk-flex-center">
+                        <a aria-label="{ collection.label }" href="@route('/collections/entries')/{collection.name}" class="uk-position-cover uk-flex uk-flex-middle uk-flex-center">
                             <div class="uk-width-1-4 uk-svg-adjust" style="color:{ (collection.meta.color) }">
                                 <img riot-src="{ collection.meta.icon ? '@url('assets:app/media/icons/')'+collection.meta.icon : '@url('collections:icon.svg')'}" alt="icon" data-uk-svg>
                             </div>
@@ -68,14 +72,14 @@
 
                         <div data-uk-dropdown="delay:300">
 
-                            <a class="uk-icon-cog" style="color:{ (collection.meta.color) }" href="@route('/collections/collection')/{ collection.name }" if="{ collection.meta.allowed.edit }"></a>
+                            <a aria-label="@lang('Edit collection')" class="uk-icon-cog" style="color:{ (collection.meta.color) }" href="@route('/collections/collection')/{ collection.name }" if="{ collection.meta.allowed.edit }"></a>
                             <a class="uk-icon-cog" style="color:{ (collection.meta.color) }" if="{ !collection.meta.allowed.edit }"></a>
 
                             <div class="uk-dropdown">
                                 <ul class="uk-nav uk-nav-dropdown">
                                     <li class="uk-nav-header">@lang('Actions')</li>
-                                    <li><a href="@route('/collections/entries')/{collection}">@lang('Entries')</a></li>
-                                    <li><a href="@route('/collections/entry')/{collection}" if="{ collection.meta.allowed.entries_create }">@lang('Add entry')</a></li>
+                                    <li><a href="@route('/collections/entries')/{collection.name}">@lang('Entries')</a></li>
+                                    <li><a href="@route('/collections/entry')/{collection.name}" if="{ collection.meta.allowed.entries_create }">@lang('Add entry')</a></li>
                                     <li if="{ collection.meta.allowed.edit || collection.meta.allowed.delete }" class="uk-nav-divider"></li>
                                     <li if="{ collection.meta.allowed.edit }"><a href="@route('/collections/collection')/{ collection.name }">@lang('Edit')</a></li>
                                     @hasaccess?('collections', 'delete')
@@ -107,7 +111,7 @@
 
         var $this = this;
 
-        this.collections = {{ json_encode($collections) }};
+        this.collections = window.__collections;
         this.groups = [];
 
         this.collections.forEach(function(collection) {

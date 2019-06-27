@@ -1,4 +1,12 @@
 <?php
+/**
+ * This file is part of the Cockpit project.
+ *
+ * (c) Artur Heinze - 🅰🅶🅴🅽🆃🅴🅹🅾, http://agentejo.com
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
 
 namespace MongoHybrid;
 
@@ -9,7 +17,7 @@ class MongoLite {
     public function __construct($server, $options=[]) {
 
         $this->client = new \MongoLite\Client(str_replace('mongolite://', '', $server));
-        $this->db     = $options["db"];
+        $this->db     = $options['db'];
     }
 
     public function getCollection($name, $db = null){
@@ -27,22 +35,37 @@ class MongoLite {
         return $this->client->selectCollection($db, $name);
     }
 
+    public function dropCollection($name, $db = null){
+
+        if(strpos($name, '/') !== false) {
+            list($db, $name) = explode('/', $name, 2);
+        }
+
+        if(!$db) {
+            $db = $this->db;
+        }
+
+        $name = str_replace('/', '_', $name);
+
+        return $db->dropCollection($name);
+    }
+
     public function findOne($collection, $filter = [], $projection = null) {
         return $this->getCollection($collection)->findOne($filter, $projection);
     }
 
     public function findOneById($collection, $id){
 
-        return $this->getCollection($collection)->findOne(["_id" => $id]);
+        return $this->getCollection($collection)->findOne(['_id' => $id]);
     }
 
     public function find($collection, $options = []){
 
-        $filter = isset($options["filter"]) ? $options["filter"] : null;
-        $fields = isset($options["fields"]) && $options["fields"] ? $options["fields"] : null;
-        $limit  = isset($options["limit"])  ? $options["limit"] : null;
-        $sort   = isset($options["sort"])   ? $options["sort"] : null;
-        $skip   = isset($options["skip"])   ? $options["skip"] : null;
+        $filter = isset($options['filter']) ? $options['filter'] : null;
+        $fields = isset($options['fields']) && $options['fields'] ? $options['fields'] : null;
+        $limit  = isset($options['limit'])  ? $options['limit'] : null;
+        $sort   = isset($options['sort'])   ? $options['sort'] : null;
+        $skip   = isset($options['skip'])   ? $options['skip'] : null;
 
         $cursor = $this->getCollection($collection)->find($filter, $fields);
 
@@ -70,6 +93,37 @@ class MongoLite {
 
     public function remove($collection, $filter=[]) {
         return $this->getCollection($collection)->remove($filter);
+    }
+
+    public function removeField($collection, $field, $filter = []) {
+
+        $collection = $this->getCollection($collection);
+
+        foreach ($collection->find($filter) as $doc) {
+
+            if (isset($doc[$field])) {
+                unset($doc[$field]);
+                $collection->update(['_id' => $doc['_id']], $doc, false);
+            }
+        }
+
+        return true;
+    }
+
+    public function renameField($collection, $field, $newfield, $filter = []) {
+
+        $collection = $this->getCollection($collection);
+
+        foreach ($collection->find($filter) as $doc) {
+
+            if (isset($doc[$field])) {
+                $doc[$newfield] = $doc[$field];
+                unset($doc[$field]);
+                $collection->update(['_id' => $doc['_id']], $doc, false);
+            }
+        }
+
+        return true;
     }
 
     public function count($collection, $filter=[]) {

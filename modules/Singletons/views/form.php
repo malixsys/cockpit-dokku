@@ -5,6 +5,10 @@
 </style>
 @endif
 
+<script>
+    window.__singletonData = {{ json_encode($data) }} || {};
+</script>
+
 <div>
 
     <ul class="uk-breadcrumb">
@@ -46,9 +50,23 @@
 
             <div class="uk-width-medium-3-4 uk-grid-margin">
 
-                <ul class="uk-tab uk-margin-large-bottom uk-flex uk-flex-center" show="{ App.Utils.count(groups) > 1 }">
+                <ul class="uk-tab uk-margin-large-bottom uk-flex uk-flex-center" if="{ App.Utils.count(_groups) > 1 && App.Utils.count(_groups) < 6 }">
                     <li class="{ !group && 'uk-active'}"><a class="uk-text-capitalize" onclick="{ toggleGroup }">{ App.i18n.get('All') }</a></li>
-                    <li class="{ group==parent.group && 'uk-active'}" each="{items,group in groups}" show="{ items.length }"><a class="uk-text-capitalize" onclick="{ toggleGroup }">{ App.i18n.get(group) }</a></li>
+                    <li class="{ group==parent.group && 'uk-active'}" each="{group, idx in _groups}" show="{ parent.groups[group].length }"><a class="uk-text-capitalize" onclick="{ toggleGroup }">{ App.i18n.get(group) }</a></li>
+                </ul>
+
+                <ul class="uk-tab uk-margin-large-bottom uk-flex uk-flex-center" if="{ App.Utils.count(_groups) > 5 }">
+                    <li class="uk-active" data-uk-dropdown="mode:'click', pos:'bottom-center'">
+                        <a>{ App.i18n.get(group || 'All') } <i class="uk-margin-small-left uk-icon-angle-down"></i></a>
+                        <div class="uk-dropdown uk-dropdown-scrollable uk-dropdown-close">
+                            <ul class="uk-nav uk-nav-dropdown">
+                            <li class="uk-nav-header">@lang('Groups')</li>  
+                            <li class="{ !group && 'uk-active'}"><a class="uk-text-capitalize" onclick="{ toggleGroup }">{ App.i18n.get('All') }</a></li>
+                            <li class="uk-nav-divider"></li>
+                            <li class="{ group==parent.group && 'uk-active'}" each="{group in _groups}" show="{ parent.groups[group].length }"><a class="uk-text-capitalize" onclick="{ toggleGroup }">{ App.i18n.get(group) }</a></li>
+                            </ul>
+                        </div>
+                    </li>
                 </ul>
 
                 <form class="uk-form" if="{ fields.length }" onsubmit="{ submit }">
@@ -57,11 +75,11 @@
 
                         <div class="uk-width-medium-{field.width}" each="{field,idx in fields}" show="{checkVisibilityRule(field) && (!group || (group == field.group)) }" if="{ hasFieldAccess(field.name) }" no-reorder>
 
-                            <div class="uk-panel">
+                            <cp-fieldcontainer>
 
                                 <label>
 
-                                    <span class="uk-text-bold">{ field.label || field.name }</span>
+                                    <span class="uk-text-bold"><i class="uk-icon-pencil-square uk-margin-small-right"></i> { field.label || field.name }</span>
 
                                     <span if="{ field.localize }" data-uk-dropdown="mode:'click'">
                                         <a class="uk-icon-globe" title="@lang('Localized field')" data-uk-tooltip="pos:'right'"></a>
@@ -84,7 +102,7 @@
                                     <cp-field type="{field.type || 'text'}" bind="{ parent.getBindValue(field) }" opts="{ field.options || {} }"></cp-field>
                                 </div>
 
-                            </div>
+                            </cp-fieldcontainer>
 
                         </div>
 
@@ -107,10 +125,10 @@
                     <div class="uk-width-1-1 uk-form-select">
 
                         <label class="uk-text-small">@lang('Language')</label>
-                        <div class="uk-margin-small-top"><span class="uk-badge uk-badge-outline {lang ? 'uk-text-primary' : 'uk-text-muted'}">{ lang ? _.find(languages,{code:lang}).label:'Default' }</span></div>
+                        <div class="uk-margin-small-top"><span class="uk-badge uk-badge-outline {lang ? 'uk-text-primary' : 'uk-text-muted'}">{ lang ? _.find(languages,{code:lang}).label:App.$data.languageDefaultLabel }</span></div>
 
                         <select bind="lang">
-                            <option value="">@lang('Default')</option>
+                            <option value="">{App.$data.languageDefaultLabel}</option>
                             <option each="{language in languages}" value="{language.code}">{language.label}</option>
                         </select>
                     </div>
@@ -153,15 +171,16 @@
 
             this.mixin(RiotBindMixin);
 
-            this.singleton    = {{ json_encode($singleton) }};
+            this.singleton = {{ json_encode($singleton) }};
             this.fields    = this.singleton.fields;
             this.fieldsidx = {};
 
-            this.data      = {{ json_encode($data) }} || {};
+            this.data      = window.__singletonData;
 
             this.languages = App.$data.languages;
-            this.groups       = {main:[]};
-            this.group        = 'main';
+            this.groups    = {main:[]};
+            this._groups   = [];
+            this.group     = 'main';
 
             // fill with default values
             this.fields.forEach(function(field){
@@ -198,13 +217,17 @@
                 $this.groups[field.group || 'main'].push(field);
             });
 
+            this._groups = Object.keys(this.groups).sort(function (a, b) {
+                return a.toLowerCase().localeCompare(b.toLowerCase());
+            });
+
             if (!this.groups[this.group].length) {
-                this.group = Object.keys(this.groups)[1];
+                this.group = $this._groups[1];
             }
 
             this.on('mount', function(){
 
-                // bind clobal command + save
+                // bind global command + save
                 Mousetrap.bindGlobal(['command+s', 'ctrl+s'], function(e) {
 
                     if (App.$('.uk-modal.uk-open').length) {
@@ -218,6 +241,11 @@
                 // wysiwyg cmd + save hack
                 App.$(this.root).on('submit', function(e, component) {
                     if (component) $this.submit(e);
+                });
+
+                // lock resource
+                Cockpit.lockResource('singleton_'+$this.singleton.name, function(e){
+                    window.location.reload();
                 });
             });
 
@@ -260,7 +288,7 @@
 
                         App.ui.notify("Saving successful", "success");
 
-                        $this.data = res.data;
+                        _.extend($this.data, res.data);
 
                         $this.fields.forEach(function(field){
 
@@ -280,7 +308,7 @@
                     }
 
                 }, function(res) {
-                    App.ui.notify(res && (res.message || res.error) ? (res.message || res.error) : "Saving failed.", "danger");
+                    App.ui.notify(res && (res.message || res.error) ? (res.message || res.error) : 'Saving failed.', 'danger');
                 });
             }
 

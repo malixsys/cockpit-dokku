@@ -1,4 +1,12 @@
 <?php
+/**
+ * This file is part of the Cockpit project.
+ *
+ * (c) Artur Heinze - 🅰🅶🅴🅽🆃🅴🅹🅾, http://agentejo.com
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
 
 namespace MongoLite;
 
@@ -29,7 +37,7 @@ class Client {
      * @param array  $options
      */
     public function __construct($path, $options = []) {
-        $this->path    = rtrim($path, '\\');
+        $this->path    = \rtrim($path, '\\');
         $this->options = $options;
     }
 
@@ -43,8 +51,8 @@ class Client {
         $databases = [];
 
         foreach (new \DirectoryIterator($this->path) as $fileInfo) {
-            if (preg_match('/\.sqlite$/', $fileInfo->getFilename())) {
-                $databases[] = str_replace(".sqlite", "", $fileInfo->getFilename());
+            if (\preg_match('/\.sqlite$/', $fileInfo->getFilename())) {
+                $databases[] = \str_replace('.sqlite', '', $fileInfo->getFilename());
              }
         }
 

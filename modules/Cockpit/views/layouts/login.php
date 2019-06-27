@@ -3,11 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <title>@lang('Authenticate Please!')</title>
-    <link rel="icon" href="@base('/favicon.ico')" type="image/x-icon">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
-
-    {{ $app->assets($app['app.assets.base'], $app['cockpit/version']) }}
-    {{ $app->assets(['assets:lib/uikit/js/components/form-password.min.js'], $app['cockpit/version']) }}
+    <link rel="icon" href="@base('/favicon.png')" type="image/png">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <style>
 
@@ -41,16 +38,22 @@
 
     </style>
 
+    {{ $app->assets($app['app.assets.base'], $app['cockpit/version']) }}
+    {{ $app->assets(['assets:lib/uikit/js/components/form-password.min.js'], $app['cockpit/version']) }}
+
+
+    @trigger('app.login.header')
+
 </head>
 <body class="login-page uk-height-viewport uk-flex uk-flex-middle uk-flex-center">
 
-    <div class="uk-position-relative login-container uk-animation-scale" riot-view>
+    <div class="uk-position-relative login-container uk-animation-scale uk-container-vertical-center" role="main" riot-view>
 
         <form class="uk-form" method="post" action="@route('/auth/check')" onsubmit="{ submit }">
 
             <div class="uk-panel-box uk-panel-space uk-panel-card uk-nbfc uk-text-center uk-animation-slide-bottom" if="{$user}">
 
-                <h2 class="uk-text-bold uk-text-truncate">@lang('Welcome back!')</h2>
+                <h1 class="uk-h2 uk-text-bold uk-text-truncate">@lang('Welcome back!')</h1>
 
                 <p>
                     <cp-gravatar email="{ $user.email }" size="80" alt="{ $user.name || $user.user }" if="{$user}"></cp-gravatar>
@@ -72,12 +75,12 @@
                 </div>
 
                 <div class="uk-form-row">
-                    <input ref="user" class="uk-form-large uk-width-1-1" type="text" placeholder="@lang('Username')" autofocus required>
+                    <input ref="user" class="uk-form-large uk-width-1-1" type="text" aria-label="@lang('Username')" placeholder="@lang('Username')" autofocus required>
                 </div>
 
                 <div class="uk-form-row">
                     <div class="uk-form-password uk-width-1-1">
-                        <input ref="password" class="uk-form-large uk-width-1-1" type="password" placeholder="@lang('Password')" required>
+                        <input ref="password" class="uk-form-large uk-width-1-1" type="password" aria-label="@lang('Password')"placeholder="@lang('Password')" required>
                         <a href="#" class="uk-form-password-toggle" data-uk-form-password>@lang('Show')</a>
                     </div>
                 </div>
@@ -91,6 +94,8 @@
 
 
         </form>
+
+        @trigger('app.login.footer')
 
 
         <script type="view/script">

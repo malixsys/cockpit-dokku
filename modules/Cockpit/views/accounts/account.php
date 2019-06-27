@@ -41,23 +41,23 @@
 
                             <div class="uk-form-row">
                                 <label class="uk-text-small">@lang('Name')</label>
-                                <input class="uk-width-1-1 uk-form-large" type="text" bind="account.name" autocomplete="off" required>
+                                <input class="uk-width-1-1 uk-form-large" type="text" bind="account.name" autocomplete="off" aria-label="@lang('Name')" required>
                             </div>
 
                             <div class="uk-form-row">
                                 <label class="uk-text-small">@lang('Username')</label>
-                                <input class="uk-width-1-1 uk-form-large" type="text" bind="account.user" autocomplete="off" required>
+                                <input class="uk-width-1-1 uk-form-large" type="text" bind="account.user" autocomplete="off" aria-label="@lang('Username')" required>
                             </div>
 
                             <div class="uk-form-row">
                                 <label class="uk-text-small">@lang('Email')</label>
-                                <input class="uk-width-1-1 uk-form-large" type="email" bind="account.email" autocomplete="off">
+                                <input class="uk-width-1-1 uk-form-large" type="email" bind="account.email" aria-label="@lang('Email')" autocomplete="off">
                             </div>
 
                             <div class="uk-form-row">
                                 <label class="uk-text-small">@lang('New Password')</label>
                                 <div class="uk-form-password uk-width-1-1">
-                                    <input class="uk-form-large uk-width-1-1" type="password" placeholder="@lang('Password')" bind="account.password" autocomplete="off">
+                                    <input class="uk-form-large uk-width-1-1" type="password" placeholder="@lang('Password')" aria-label="@lang('Password')" bind="account.password" autocomplete="off">
                                     <a href="" class="uk-form-password-toggle" data-uk-form-password>@lang('Show')</a>
                                 </div>
                                 <div class="uk-alert">
@@ -71,12 +71,14 @@
                                 <div class="uk-flex uk-flex-middle">
                                     <div class="uk-form-icon uk-display-block uk-flex-item-1">
                                         <i class="uk-icon-key"></i>
-                                        <input class="uk-form-large uk-width-1-1" type="text" bind="account.api_key" placeholder="@lang('No token generated yet')" bind="account.apikey" disabled>
+                                        <input class="uk-form-large uk-width-1-1" type="text" bind="account.api_key" placeholder="@lang('No token generated yet')" aria-label="@lang('Api token')" bind="account.apikey" disabled>
                                     </div>
                                     <a class="uk-icon-refresh uk-margin-left" onclick="{ generateApiToken }" style="pointer-events:auto;"></a>
                                     <a class="uk-margin-left" type="button" onclick="{ copyApiKey }" title="@lang('Copy Token')" data-uk-tooltip="pos:'top'"><i class="uk-icon-copy"></i></a>
                                 </div>
                             </div>
+
+                            @trigger('cockpit.account.panel', [&$account])
 
                         </div>
 
@@ -107,7 +109,7 @@
 
                         </div>
 
-                        @trigger('cockpit.account.editview')
+                        @trigger('cockpit.account.editview', [&$account])
 
                         <cp-actionbar>
                             <div class="uk-container uk-container-center">
@@ -224,7 +226,7 @@
 
             this.root.classList.remove('uk-invisible');
 
-            // bind clobal command + save
+            // bind global command + save
             Mousetrap.bindGlobal(['command+s', 'ctrl+s'], function(e) {
 
                 if (App.$('.uk-modal.uk-open').length) {
@@ -239,6 +241,22 @@
             if (!this.account.api_key) {
                 this.generateApiToken();
             }
+
+            // lock resource
+
+
+            // lock resource
+            var idle = setInterval(function() {
+                
+                if (!$this.account._id) return;
+
+                Cockpit.lockResource($this.account._id, function(e){
+                    window.location.href = App.route('/accounts/account/'+$this.account._id);
+                });
+                
+                clearInterval(idle);
+
+            }, 60000);
 
             $this.update();
         });

@@ -1,4 +1,12 @@
 <?php
+/**
+ * This file is part of the Cockpit project.
+ *
+ * (c) Artur Heinze - 🅰🅶🅴🅽🆃🅴🅹🅾, http://agentejo.com
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
 
 namespace Cockpit\Helper;
 
@@ -29,10 +37,17 @@ class Admin extends \Lime\Helper {
         });
 
         $languages = [];
+        $langDefaultLabel = 'Default';
 
-        foreach($this->app->retrieve('config/languages', []) as $key => $val) {
+        foreach ($this->app->retrieve('config/languages', []) as $key => $val) {
+
             if (is_numeric($key)) $key = $val;
-            $languages[] = ['code'=>$key,'label'=>$val];
+
+            if ($key == 'default') {
+                $langDefaultLabel = $val;
+            } else {
+                $languages[] = ['code'=>$key, 'label'=>$val];
+            }
         }
 
         $this->data->extend([
@@ -71,7 +86,8 @@ class Admin extends \Lime\Helper {
                 'locale'    => $this->app->helper('i18n')->locale,
                 'site_url'  => $this->app->pathToUrl('site:'),
                 'languages' => $languages,
-                'groups'    => $this->app->helper('acl')->getGroups(),
+                'languageDefaultLabel' => $langDefaultLabel,
+                'groups' => $this->app->helper('acl')->getGroups(),
 
                 'acl' => [
                     'finder' => $this->app->module('cockpit')->hasaccess('cockpit', 'finder')
@@ -140,6 +156,73 @@ class Admin extends \Lime\Helper {
         $this->user['data']->set($key, $value);
 
         return $this->app->module('cockpit')->updateUserOption($key, $value);
+    }
+
+    public function isResourceLocked($resourceId, $ttl = null) {
+
+        $ttl  = $ttl ?? 300;
+        $key  = "locked:{$resourceId}";
+        $meta = $this->app->memory->get($key, false);
+
+        if ($meta && ($meta['time'] + $ttl) < time()) {
+            $this->app->memory->del($key);
+            $meta = false;
+        }
+
+        if ($meta) {
+            return $meta;
+        }
+
+        return false;
+    }
+
+    public function isResourceEditableByCurrentUser($resourceId, &$meta = null) {
+
+        $meta = $this->isResourceLocked($resourceId);
+
+        if (!$meta) {
+            return true;
+        }
+
+        $user = $this->app->module('cockpit')->getUser();
+
+        if ($meta['user']['_id'] == $user['_id'] && $meta['sid'] == md5(session_id())) {
+            return true;
+        }
+
+        return false;
+    }
+
+    public function lockResourceId($resourceId, $user = null) {
+
+        if (!$resourceId) {
+            return false;
+        }
+
+        $key  = "locked:{$resourceId}";
+        $user = $user ?? $this->app->module('cockpit')->getUser();
+
+        if (!$user) {
+            return false;
+        }
+
+        $meta = [
+            'rid'  => $resourceId,
+            'user' => ['_id' => $user['_id'], 'name' => $user['name'], 'user' => $user['user'], 'email' => $user['email']],
+            'sid'  => md5(session_id()),
+            'time' => time()
+        ];
+
+        $this->app->memory->set($key, $meta);
+
+        return true;
+    }
+
+    public function unlockResourceId($resourceId) {
+
+        $key = "locked:{$resourceId}";
+        $this->app->memory->del($key);
+        return true;
     }
 
     public function denyRequest() {

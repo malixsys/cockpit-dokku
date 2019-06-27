@@ -1,4 +1,13 @@
 <?php
+/**
+ * This file is part of the Cockpit project.
+ *
+ * (c) Artur Heinze - 🅰🅶🅴🅽🆃🅴🅹🅾, http://agentejo.com
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
 namespace Collections\Controller;
 
 class RestApi extends \LimeExtra\Controller {
@@ -30,36 +39,35 @@ class RestApi extends \LimeExtra\Controller {
         $options = [];
 
         if ($filter   = $this->param('filter', null))   $options['filter'] = $filter;
-        if ($limit    = $this->param('limit', null))    $options['limit'] = intval($limit);
+        if ($limit    = $this->param('limit', null))    $options['limit'] = \intval($limit);
         if ($sort     = $this->param('sort', null))     $options['sort'] = $sort;
         if ($fields   = $this->param('fields', null))   $options['fields'] = $fields;
-        if ($skip     = $this->param('skip', null))     $options['skip'] = intval($skip);
+        if ($skip     = $this->param('skip', null))     $options['skip'] = \intval($skip);
         if ($populate = $this->param('populate', null)) $options['populate'] = $populate;
 
         // cast string values if get request
-        if ($filter && isset($_GET['filter'])) $options['filter'] = $this->_fixStringBooleanValues($filter);
-        if ($fields && isset($_GET['fields'])) $options['fields'] = $this->_fixStringBooleanValues($fields);
+        if ($filter && isset($_GET['filter'])) $options['filter'] = $this->app->helper('utils')->fixStringBooleanValues($filter);
+        if ($fields && isset($_GET['fields'])) $options['fields'] = $this->app->helper('utils')->fixStringNumericValues($fields);
 
         // fields filter
-
         if ($fieldsFilter = $this->param('fieldsFilter', [])) $options['fieldsFilter'] = $fieldsFilter;
         if ($lang = $this->param('lang', false)) $fieldsFilter['lang'] = $lang;
-        if ($ignoreDefaultFallback = $this->param('ignoreDefaultFallback', false)) $fieldsFilter['ignoreDefaultFallback'] = in_array($ignoreDefaultFallback, ['1', '0']) ? boolval($ignoreDefaultFallback) : $ignoreDefaultFallback;
+        if ($ignoreDefaultFallback = $this->param('ignoreDefaultFallback', false)) $fieldsFilter['ignoreDefaultFallback'] = \in_array($ignoreDefaultFallback, ['1', '0']) ? \boolval($ignoreDefaultFallback) : $ignoreDefaultFallback;
         if ($user) $fieldsFilter['user'] = $user;
 
-        if (is_array($fieldsFilter) && count($fieldsFilter)) {
+        if (\is_array($fieldsFilter) && \count($fieldsFilter)) {
             $options['fieldsFilter'] = $fieldsFilter;
         }
 
         if ($sort) {
 
             foreach ($sort as $key => &$value) {
-                $options['sort'][$key]= intval($value);
+                $options['sort'][$key]= \intval($value);
             }
         }
 
         $entries = $this->module('collections')->find($collection['name'], $options);
-        $count = count($entries);
+        $count = \count($entries);
         $isSortable = $collection['sortable'] ?? false;
 
         // sort by custom order if collection is sortable
@@ -84,8 +92,8 @@ class RestApi extends \LimeExtra\Controller {
 
             if (
                 $user && isset($field['acl']) &&
-                is_array($field['acl']) && count($field['acl']) &&
-                !(in_array($user['_id'] , $field['acl']) || in_array($user['group'] , $field['acl']))
+                \is_array($field['acl']) && \count($field['acl']) &&
+                !(\in_array($user['_id'] , $field['acl']) || \in_array($user['group'] , $field['acl']))
             ) {
                 continue;
             }
@@ -135,7 +143,11 @@ class RestApi extends \LimeExtra\Controller {
             $data['_by'] = $userId;
         }
 
-        $data = $this->module('collections')->save($collection, $data);
+        $options = [];
+
+        if ($revision = $this->param('revision', null)) $options['revision'] = $this->app->helper('utils')->fixStringBooleanValues($revision);
+
+        $data = $this->module('collections')->save($collection, $data, $options); 
 
         return $data;
     }
@@ -151,7 +163,7 @@ class RestApi extends \LimeExtra\Controller {
         }
 
         // handele single item cases
-        if (is_string($filter)) {
+        if (\is_string($filter)) {
             $filter = ['_id' => $filter];
         } elseif (isset($filter['_id'])) {
             $filter = ['_id' => $filter['_id']];
@@ -240,31 +252,6 @@ class RestApi extends \LimeExtra\Controller {
             $collections = $this->module('collections')->collections($extended);
         }
 
-        return $extended ? $collections : array_keys($collections);
-    }
-
-    protected function _fixStringBooleanValues(&$array) {
-
-        if (!is_array($array)) {
-            return $array;
-        }
-
-        foreach ($array as $k => $v) {
-
-            if (is_array($array[$k])) {
-                $array[$k] = $this->_fixStringBooleanValues($array[$k]);
-            }
-
-            if (is_string($v)) {
-
-                if ($v === 'true' || $v === 'false') {
-                    $v = filter_var($v, FILTER_VALIDATE_BOOLEAN);
-                }
-            }
-
-            $array[$k] = $v;
-        }
-
-        return $array;
+        return $extended ? $collections : \array_keys($collections);
     }
 }

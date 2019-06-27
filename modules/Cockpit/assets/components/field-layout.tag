@@ -120,13 +120,13 @@
 
                     <div class="uk-panel">
 
-                        <label class="uk-text-bold">{ field.label || field.name }</label>
+                        <label class="uk-text-small uk-text-bold"><i class="uk-icon-pencil-square uk-margin-small-right"></i> { field.label || field.name }</label>
 
-                            <div class="uk-margin uk-text-small uk-text-muted">{ field.info || ' ' }</div>
+                        <div class="uk-margin-small-top uk-text-small uk-text-muted" show="{field.info}">{ field.info }</div>
 
-                            <div class="uk-margin">
-                                <cp-field type="{field.type || 'text'}" bind="settingsComponent.settings.{field.name}" opts="{ field.options || {} }"></cp-field>
-                            </div>
+                        <div class="uk-margin-small-top">
+                            <cp-field type="{field.type || 'text'}" bind="settingsComponent.settings.{field.name}" opts="{ field.options || {} }"></cp-field>
+                        </div>
                     </div>
 
                 </div>
@@ -231,9 +231,9 @@
 
 
         this.on('mount', function() {
-            
+
             App.trigger('field.layout.components', {components:this.components, opts:opts});
-            
+
             // exclude components?
             if (Array.isArray(opts.exclude) && opts.exclude.length) {
 
@@ -241,7 +241,7 @@
                     if ($this.components[c]) delete $this.components[c];
                 });
             }
-            
+
 
             if (opts.components && App.Utils.isObject(opts.components)) {
                 this.components = App.$.extend(true, this.components, opts.components);
@@ -381,7 +381,7 @@
             if (Array.isArray(settings.fields)) {
 
                 settings.fields.forEach(function(field) {
-                    item.settings[field.name] = field.default || null;
+                    item.settings[field.name] = field.options && field.options.default || null;
                 })
             }
 
@@ -415,7 +415,7 @@
 
         remove(e) {
             this.items.splice(e.item.idx, 1);
-            
+
             if (opts.child) {
                 this.parent.update()
             }
@@ -476,7 +476,7 @@
 <field-layout-grid>
 
     <div class="uk-text-center uk-placeholder" if="{!columns.length}">
-        <a class="uk-button uk-button-link" onclick="{ addColumn }">{ App.i18n.get('Add Colum') }</a>
+        <a class="uk-button uk-button-link" onclick="{ addColumn }">{ App.i18n.get('Add Column') }</a>
     </div>
 
     <div class="uk-sortable uk-grid uk-grid-match uk-grid-small uk-grid-width-medium-1-{columns.length > 4 ? 1 : columns.length}" show="{columns.length}" ref="columns" data-uk-sortable="animation:false">
@@ -484,7 +484,7 @@
             <div class="uk-panel">
                 <div class="uk-flex uk-flex-middle uk-text-small uk-visible-hover">
                     <div class="uk-flex-item-1 uk-margin-small-right"><a class="uk-text-muted uk-text-uppercase field-layout-column-label" onclick="{ parent.settings }" title="{ App.i18n.get('Settings') }">{ App.i18n.get('Column') } { (idx+1) }</a></div>
-                    <a class="uk-invisible uk-margin-small-right" onclick="{ parent.addColumn }" title="{ App.i18n.get('Add Colum') }"><i class="uk-icon-plus"></i></a>
+                    <a class="uk-invisible uk-margin-small-right" onclick="{ parent.addColumn }" title="{ App.i18n.get('Add Column') }"><i class="uk-icon-plus"></i></a>
                     <a class="uk-invisible" onclick="{ parent.remove }"><i class="uk-text-danger uk-icon-trash-o"></i></a>
                 </div>
                 <div class="uk-margin">

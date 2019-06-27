@@ -1,4 +1,13 @@
 <?php
+/**
+ * This file is part of the Cockpit project.
+ *
+ * (c) Artur Heinze - 🅰🅶🅴🅽🆃🅴🅹🅾, http://agentejo.com
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
 namespace Cockpit\Controller;
 
 class RestApi extends \LimeExtra\Controller {
@@ -16,12 +25,41 @@ class RestApi extends \LimeExtra\Controller {
         }
 
         $user = $this->module('cockpit')->authenticate($data);
+        $generateApiKey = $this->param('generateApiKey', false);
 
         if (!$user) {
+            $this->app->trigger('cockpit.authentication.failed', [$data['user']]);
             return $this->stop(['error' => 'Authentication failed'], 401);
         }
 
+        $this->app->trigger('cockpit.authentication.success', [&$user]);
+
+        if ($generateApiKey) {
+            $user['api_key'] = 'account-'.\uniqid(\bin2hex(\random_bytes(16)));
+            $this->app->storage->save('cockpit/accounts', $user);
+        }
+
         return $user;
+    }
+
+    public function refreshUserApiKey() {
+
+        $apiKey = $this->param('apiKey');
+
+        if (!$apiKey) {
+            return $this->stop(['error' => 'apiKey parameter is missing'], 412);
+        }
+
+        $user = $this->app->storage->findOne('cockpit/accounts', ['api_key' => $apiKey]);
+
+        if (!$user) {
+            return $this->stop(['error' => 'User not found'], 401);
+        }
+
+        $user['api_key'] = 'account-'.\uniqid(\bin2hex(\random_bytes(16)));
+        $this->app->storage->save('cockpit/accounts', $user);
+
+        return ['success' => true];
     }
 
     public function saveUser() {
@@ -65,7 +103,7 @@ class RestApi extends \LimeExtra\Controller {
                 return $this->stop(['error' => 'Username required'], 412);
             }
 
-            $data = array_merge($account = [
+            $data = \array_merge($account = [
                 'user'   => 'admin',
                 'name'   => '',
                 'email'  => '',
@@ -75,7 +113,7 @@ class RestApi extends \LimeExtra\Controller {
             ], $data);
 
             if (isset($data['api_key'])) {
-                $data['api_key'] = uniqid('account-').uniqid();
+                $data['api_key'] = 'account-'.\uniqid(\bin2hex(\random_bytes(16)));
             }
 
             $data['_created'] = $data['_modified'];
@@ -94,12 +132,12 @@ class RestApi extends \LimeExtra\Controller {
             return $this->stop(['error' => 'Valid email required'], 412);
         }
 
-        if (isset($data['user']) && !trim($data['user'])) {
+        if (isset($data['user']) && !\trim($data['user'])) {
             return $this->stop(['error' => 'Username cannot be empty!'], 412);
         }
 
         foreach (['name', 'user', 'email'] as $key) {
-            if (isset($data[$key])) $data[$key] = strip_tags(trim($data[$key]));
+            if (isset($data[$key])) $data[$key] = \strip_tags(\trim($data[$key]));
         }
 
         // unique check
@@ -130,14 +168,14 @@ class RestApi extends \LimeExtra\Controller {
             unset($data['password']);
         }
 
-        return json_encode($data);
+        return \json_encode($data);
     }
 
     public function listUsers() {
 
         $user    = $this->module('cockpit')->getUser();
         $isAdmin = false;
-        $options = array_merge(['sort' => ['user' => 1]], $this->param('options', []));
+        $options = \array_merge(['sort' => ['user' => 1]], $this->param('options', []));
 
         if ($user) {
 
@@ -152,7 +190,7 @@ class RestApi extends \LimeExtra\Controller {
 
             $options['filter'] = $filter;
 
-            if (is_string($filter)) {
+            if (\is_string($filter)) {
 
                 $options['filter'] = [
                     '$or' => [
@@ -167,10 +205,8 @@ class RestApi extends \LimeExtra\Controller {
         $accounts = $this->app->storage->find('cockpit/accounts', $options)->toArray();
 
         foreach ($accounts as &$account) {
-
-            if (isset($account['password']))     unset($account['password']);
-            if (isset($account['api_key']))      unset($account['api_key']);
-            if (isset($account['_reset_token'])) unset($account['_reset_token']);
+            unset($account['password'], $account['api_key'], $account['_reset_token']);
+            $this->app->trigger('cockpit.accounts.disguise', [&$account]);
         }
 
         return $accounts;
@@ -188,7 +224,7 @@ class RestApi extends \LimeExtra\Controller {
             'quality' => intval($this->param('q', 100)),
             'rebuild' => intval($this->param('r', false)),
             'base64'  => intval($this->param('b64', false)),
-            'output'  => intval($this->param('o', false))
+            'output'  => $this->param('o', false)
         ];
 
         // Set single filter when available
@@ -196,7 +232,7 @@ class RestApi extends \LimeExtra\Controller {
             'blur', 'brighten',
             'colorize', 'contrast',
             'darken', 'desaturate',
-            'edge detect', 'emboss',
+            'edgeDetect', 'emboss',
             'flip', 'invert', 'opacity', 'pixelate', 'sepia', 'sharpen', 'sketch'
         ] as $f) {
             if ($this->param($f)) $options[$f] = $this->param($f);
@@ -221,8 +257,7 @@ class RestApi extends \LimeExtra\Controller {
     }
 
     public function addAssets() {
-
-        return $this->module('cockpit')->uploadAssets('files');
+        return $this->module('cockpit')->uploadAssets('files', $this->param('meta', []));
     }
 
     public function updateAssets() {
